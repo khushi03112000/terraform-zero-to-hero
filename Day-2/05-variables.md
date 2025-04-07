@@ -60,3 +60,67 @@ output "root_output" {
 ```
 
 This allows you to share data and values between different parts of your Terraform configuration and create more modular and maintainable infrastructure-as-code setups.
+
+Great question — this shows clarity of thought!
+
+## Short Answer:
+→ No, Terraform is *not* a dynamically typed language in the traditional sense.  
+Terraform (HashiCorp Configuration Language - HCL) is a *declarative* language, not a general-purpose programming language.
+
+---
+
+## What does that mean?
+
+| Term | Meaning |
+|------|---------|
+| *Dynamically Typed* | Data types of variables are determined at runtime (like Python, JavaScript). |
+| *Statically Typed* | Data types are defined at compile time (like Java, Go, C++). |
+| *Terraform / HCL* | Declarative — focuses on describing *what* resources you want, not *how* to build them. But variable types can be optionally declared for safety. |
+
+---
+
+## In Terraform:
+
+### By default:
+Terraform variables are *dynamically typed*.  
+If you don’t specify a type → Terraform tries to infer the type based on the value you pass.
+
+Example:
+```hcl
+variable "instance_name" {}
+```
+Here, type is not enforced — any value can be passed.
+
+---
+
+## But — Terraform *supports* static typing (optional)
+
+If you want to enforce the type:
+```hcl
+variable "instance_name" {
+  type = string
+}
+
+variable "instance_tags" {
+  type = map(string)
+}
+
+variable "availability_zones" {
+  type = list(string)
+}
+```
+
+---
+
+## Final Conclusion:
+
+| Terraform Behaviour | Explanation |
+|--------------------|-------------|
+| By default | Dynamically typed (no strict type checking). |
+| Recommended | Use *type constraints* for production code to avoid errors. |
+| Nature of Language | Declarative, not programming oriented — focuses on infrastructure configuration. |
+
+---
+
+## Summary Line for Interview:
+> "Terraform is a declarative language — by default variables are dynamically typed, but it supports optional static typing for better safety and validation."
