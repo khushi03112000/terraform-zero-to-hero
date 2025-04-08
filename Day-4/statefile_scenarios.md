@@ -110,3 +110,104 @@ By following these steps, you can securely store your Terraform state in S3 with
 ```
 
 Please note that you should adapt the configuration and commands to your specific AWS environment and requirements.
+```
+
+# Learning While doing Practical !!! 
+
+### Root Cause of `Backend Configuration Changed` Error:
+> Terraform throws this error because *backend configuration* (in `backend.tf` or `main.tf` backend block) is special.  
+> It *cannot* be applied like normal resources using `terraform apply`.  
+
+---
+
+## Why?
+
+Backend configuration controls:
+- *Where* Terraform stores the statefile.
+- *How* Terraform locks the state (with DynamoDB).
+  
+When you run:
+```bash
+terraform init
+```
+Terraform checks your backend configuration and:
+- Connects to S3 (for state storage)
+- Connects to DynamoDB (for state locking)
+- Migrates local state → remote backend (S3)
+
+---
+
+## Problem in Your Case:
+You are trying to:
+1. Create S3 bucket & DynamoDB table using Terraform resources
+2. And in the same run — configure backend in `backend.tf` to store state in S3 and lock in DynamoDB.
+
+But →  
+> *State doesn't even exist in S3 yet* because S3 & DynamoDB are not created!  
+
+So Terraform is confused —  
+- It’s reading backend config saying "Hey! Store state in S3"  
+- But there is no S3 bucket yet → Error!
+
+---
+
+## Correct Approach (Best Practice)
+
+### Step 1 → Create S3 & DynamoDB Resources Locally
+
+Write code for:
+```hcl
+resource "aws_s3_bucket" "tfstate" { ... }
+resource "aws_dynamodb_table" "statelock" { ... }
+```
+
+Then run:
+```bash
+terraform init
+terraform apply
+```
+
+This will store state *locally* because you have *not yet* defined backend config.
+
+---
+
+### Step 2 → Configure backend.tf for Remote State
+
+Now write:
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "your-bucket-name"
+    key            = "terraform/state.tfstate"
+    region         = "your-region"
+    dynamodb_table = "your-lock-table-name"
+  }
+}
+```
+
+Then run:
+```bash
+terraform init
+```
+
+Terraform will ask:
+```
+Do you want to migrate your state to the new backend?
+```
+
+Say `yes`.
+
+---
+
+## Step 3 → Done!
+
+Now your state is in S3 with locking enabled.
+
+---
+
+## Final Golden Rule:
+> Backend resources (S3 & DynamoDB) must be created *before* configuring remote backend in `backend.tf`.
+
+---
+
+Let me know if you want me to write a full working example project for this with directory structure!
